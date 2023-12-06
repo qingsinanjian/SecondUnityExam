@@ -12,6 +12,7 @@ public class ProjectileMover : MonoBehaviour
     public GameObject flash;
     private Rigidbody rb;
     public GameObject[] Detached;
+    public float survivalTime = 5f;
 
     void Start()
     {
@@ -31,7 +32,7 @@ public class ProjectileMover : MonoBehaviour
                 Destroy(flashInstance, flashPsParts.main.duration);
             }
         }
-        Destroy(gameObject,5);
+        Destroy(gameObject, survivalTime);
 	}
 
     void FixedUpdate ()
@@ -43,7 +44,6 @@ public class ProjectileMover : MonoBehaviour
         }
 	}
 
-    //https ://docs.unity3d.com/ScriptReference/Rigidbody.OnCollisionEnter.html
     void OnCollisionEnter(Collision collision)
     {
         //Lock all axes movement and rotation

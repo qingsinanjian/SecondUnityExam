@@ -4,16 +4,43 @@ using UnityEngine;
 
 public class PlayerManager : MonoBehaviour
 {
-    //主角属性设定：昵称、生命值、魔法值、物理攻击力、魔法攻击力、移动速度；
+    //主角属性设定：昵称、生命值、魔法值、物理攻击力、魔法攻击力、移动速度、跳跃力、是否在地面；
     public string playerName;
     public int currentHP;
+    public int MaxHP = 100;
+    public int currentMP;
     public int MaxMP = 100;
-    public int physicalDamage = 1;
-    public int magicDamage = 2;
+    public int physicalDamage = 10;
+    public int magicDamage = 20;
+    [Header("Buff后的物理攻击力")]
+    public int buffPSDamage = 15;
+    [Header("Buff后的魔法攻击力")]
+    public int buffMCDamage = 30;
     public float moveSpeed = 5f;
     public float rotateSpeed = 90f;
     public float jumpForce = 600f;
     public bool isOnGround = true;
+    [Header("是否处于增幅状态")]
+    public bool isBuffing = false;
+    
+    //技能特效
+    public GameObject[] skillEffects;
+    //近战技能、远程技能、增幅技能的冷却时间
+    public float meleeCoolingTime = 2;
+    private float meleeDelay;
+    public float rangedCoolingTime = 3;
+    private float rangedDelay;
+    public float buffCoolingTime = 15;
+    private float buffDelay;
+    [Header("Buff持续时间")]
+    public float buffDuration = 5;
+    private float curBuffDuration;
+    [Header("远程技能魔法消耗值")]
+    public int rangedMP = 20;
+    [Header("Buff魔法消耗值")]
+    public int buffMP = 40;
+    //技能特效释放的基准点
+    public GameObject effectPoint;
 
     private Rigidbody rb;
     private Animator animator;
@@ -21,9 +48,19 @@ public class PlayerManager : MonoBehaviour
     private float inputV;
     private int moveScale = 1;
 
+    public bool isClone;
+    public GameObject enemyPrefab;
+
+    public GameUIController gameUIController;
+
     private void Start()
     {
-        currentHP = MaxMP;
+        currentHP = MaxHP;
+        currentMP = MaxMP;
+        meleeDelay = meleeCoolingTime;
+        rangedDelay = rangedCoolingTime;
+        buffDelay = buffCoolingTime;
+        curBuffDuration = buffDuration;
         rb = GetComponent<Rigidbody>();
         animator = GetComponent<Animator>();
     }
@@ -42,6 +79,10 @@ public class PlayerManager : MonoBehaviour
 
     private void Update()
     {
+        if (isClone)
+        {
+            return;
+        }
         if (Input.GetKey(KeyCode.LeftShift))
         {
             moveScale = 2;
@@ -57,6 +98,9 @@ public class PlayerManager : MonoBehaviour
         Jump();
         CommonAttack();
         PlaySkillInput();
+        IsBuffingState();
+        CallEnemy();
+        SkillCoolDown();
     }
 
     /// <summary>
@@ -125,19 +169,203 @@ public class PlayerManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 技能释放
+    /// </summary>
     private void PlaySkillInput()
     {
         if (Input.GetKeyDown(KeyCode.Alpha1))
         {
-            animator.CrossFade("Skill1", 0.1f);
+            if(meleeDelay >= meleeCoolingTime)
+            {
+                animator.CrossFade("Skill1", 0.1f);
+                meleeDelay = 0;
+                gameUIController.SkillRelease(0, true);
+            }
         }
+        meleeDelay += Time.deltaTime;
         if (Input.GetKeyDown(KeyCode.Alpha2))
         {
-            animator.CrossFade("Skill2", 0.1f);
+            if(currentMP >= rangedMP)
+            {
+                if (rangedDelay >= rangedCoolingTime)
+                {
+                    animator.CrossFade("Skill2", 0.1f);
+                    currentMP -= rangedMP;
+                    gameUIController.MPCost(currentMP, MaxMP);
+                    rangedDelay = 0;
+                    gameUIController.SkillRelease(1, true);
+                }
+            }
+            else
+            {
+                Debug.Log("魔力值不够");
+            }            
         }
+        rangedDelay += Time.deltaTime;
         if (Input.GetKeyDown(KeyCode.Alpha3))
         {
-            animator.CrossFade("Skill3", 0.1f);
+            if(currentMP >= buffMP)
+            {
+                if (buffDelay >= buffCoolingTime)
+                {
+                    isBuffing = true;
+                    animator.CrossFade("Skill3", 0.1f);
+                    currentMP -= buffMP;
+                    gameUIController.MPCost(currentMP, MaxMP);
+                    buffDelay = 0;
+                    gameUIController.SkillRelease(2, true);
+                }
+            }
+            else
+            {
+                Debug.Log("魔力值不够");
+            }
+        }
+        buffDelay += Time.deltaTime;
+
+        IsMPEnough();
+    }
+
+    /// <summary>
+    /// 技能冷却计算
+    /// </summary>
+    private void SkillCoolDown()
+    {
+        if (meleeDelay < meleeCoolingTime)
+        {
+            float coolDown = (meleeCoolingTime - meleeDelay) / meleeCoolingTime;
+            gameUIController.SkillCD(0, coolDown);
+        }
+        if (rangedDelay < rangedCoolingTime)
+        {
+            float coolDown = (rangedCoolingTime - rangedDelay) / rangedCoolingTime;
+            gameUIController.SkillCD(1, coolDown);
+        }
+        if (buffDelay < buffCoolingTime)
+        {
+            float coolDown = (buffCoolingTime - buffDelay) / buffCoolingTime;
+            gameUIController.SkillCD(2, coolDown);
+        }
+    }
+
+    /// <summary>
+    /// 判断魔法值是否足够释放技能
+    /// </summary>
+    private void IsMPEnough()
+    {
+        gameUIController.SetISMPEnough(1, currentMP >= rangedMP);
+        gameUIController.SetISMPEnough(2, currentMP >= buffMP);
+    }
+
+    /// <summary>
+    /// 是否处于Buff状态
+    /// </summary>
+    private void IsBuffingState()
+    {
+        if (isBuffing)
+        {
+            if(curBuffDuration >= 0)
+            {
+                curBuffDuration -= Time.deltaTime;
+            }
+            else
+            {
+                isBuffing = false;
+                curBuffDuration = buffDuration;
+            }
+        }
+    }
+
+    /// <summary>
+    /// 播放近战技能特效
+    /// </summary>
+    private void PlayMeleeEffect()
+    {
+        if (isClone) return;
+        Vector3 pos = effectPoint.transform.position - new Vector3(0f, 0.1f, 0);
+        GameObject go = Instantiate(skillEffects[0], pos, Quaternion.identity, effectPoint.transform);
+        Weapon weapon = go.GetComponent<Weapon>();
+        if(isBuffing)
+        {
+            weapon.damageValue = buffPSDamage;
+        }
+        else
+        {
+            weapon.damageValue = physicalDamage;
+        }
+    }
+
+    /// <summary>
+    /// 播放远程技能特效
+    /// </summary>
+    private void PlayRangedEffect()
+    {
+        Vector3 pos = effectPoint.transform.position + new Vector3(0f, 1f, 0);
+        GameObject go = Instantiate(skillEffects[1], pos, Quaternion.LookRotation(transform.forward));
+        Weapon weapon = go.GetComponent<Weapon>();
+        if (isBuffing)
+        {
+            weapon.damageValue = buffMCDamage;
+        }
+        else
+        {
+            weapon.damageValue = magicDamage;
+        }
+    }
+
+    /// <summary>
+    /// 播放Buff特效
+    /// </summary>
+    private void PlayBuffEffect()
+    {
+        Vector3 pos = transform.position + new Vector3(0f, 1f, 0);
+        Instantiate(skillEffects[2], pos, Quaternion.identity, transform);
+    }
+
+    /// <summary>
+    /// 播放普通攻击特效
+    /// </summary>
+    private void PlayCommonAttackEffect()
+    {
+        Vector3 pos = effectPoint.transform.position - new Vector3(0f, 0f, 0);
+        GameObject go = Instantiate(skillEffects[3], pos, Quaternion.identity, effectPoint.transform);
+        Weapon weapon = go.GetComponent<Weapon>();
+        if (isBuffing)
+        {
+            weapon.damageValue = buffPSDamage - 5;
+        }
+        else
+        {
+            weapon.damageValue = physicalDamage - 5;
+        }
+    }
+
+    /// <summary>
+    /// 受到伤害
+    /// </summary>
+    /// <param name="damageValue"></param>
+    public void TakeDamage(int damageValue)
+    {
+        currentHP -= damageValue;
+        animator.SetTrigger("Hit");
+        if(currentHP <= 0)
+        {
+            animator.SetBool("Die", true);
+            transform.GetComponent<CapsuleCollider>().enabled = false;
+            rb.isKinematic = true;
+        }
+    }
+
+    /// <summary>
+    /// 按C召唤敌人
+    /// </summary>
+    private void CallEnemy()
+    {
+        if (Input.GetKeyDown(KeyCode.C))
+        {
+            GameObject go = Instantiate(enemyPrefab, transform.position + transform.forward * 5, Quaternion.identity);
+            go.transform.LookAt(transform.position);
         }
     }
 }
