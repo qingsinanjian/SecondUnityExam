@@ -9915,3 +9915,4 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   damageValue: 0
+  weaponAttribute: 1

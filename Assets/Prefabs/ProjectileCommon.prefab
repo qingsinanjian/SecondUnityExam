@@ -5048,4 +5048,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 35326d80239e44b45b40a662a0230f85, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  damageValue: 0
+  damageValue: 10
+  weaponAttribute: 0

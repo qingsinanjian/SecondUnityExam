@@ -4,16 +4,19 @@ using UnityEngine;
 
 public class Weapon : MonoBehaviour
 {
+    [HideInInspector]
     public int damageValue;
-    private PlayerManager playerManager;
+    [Header("武器属性：0物理，1魔法")]
+    public int weaponAttribute = -1;
+    private EnemyManager enemyManager;
 
 
     private void OnCollisionEnter(Collision collision)
     {
         if (collision.transform.CompareTag("Enemy"))
         {
-            playerManager = collision.transform.GetComponent<PlayerManager>();
-            playerManager.TakeDamage(damageValue);
+            enemyManager = collision.transform.GetComponent<EnemyManager>();
+            enemyManager.TakeDamage(weaponAttribute, damageValue);
         }
     }
 }

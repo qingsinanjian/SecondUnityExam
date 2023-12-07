@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 public class PlayerManager : MonoBehaviour
 {
@@ -10,12 +11,14 @@ public class PlayerManager : MonoBehaviour
     public int MaxHP = 100;
     public int currentMP;
     public int MaxMP = 100;
-    public int physicalDamage = 10;
-    public int magicDamage = 20;
+    public int physicalDamage = 15;
+    public int magicDamage = 25;
     [Header("Buff后的物理攻击力")]
-    public int buffPSDamage = 15;
+    public int buffPSDamage = 25;
     [Header("Buff后的魔法攻击力")]
-    public int buffMCDamage = 30;
+    public int buffMCDamage = 35;
+    public int physicalDef = 5;
+    public int magicDef = 5;
     public float moveSpeed = 5f;
     public float rotateSpeed = 90f;
     public float jumpForce = 600f;
@@ -48,10 +51,9 @@ public class PlayerManager : MonoBehaviour
     private float inputV;
     private int moveScale = 1;
 
-    public bool isClone;
     public GameObject enemyPrefab;
 
-    public GameUIController gameUIController;
+    public PlayerUIController playerUIController;
 
     private void Start()
     {
@@ -63,6 +65,8 @@ public class PlayerManager : MonoBehaviour
         curBuffDuration = buffDuration;
         rb = GetComponent<Rigidbody>();
         animator = GetComponent<Animator>();
+        playerUIController.nickNameText.text = playerName;
+        playerUIController.MPCost(currentMP, MaxMP);
     }
 
     private void OnCollisionEnter(Collision collision)
@@ -79,10 +83,11 @@ public class PlayerManager : MonoBehaviour
 
     private void Update()
     {
-        if (isClone)
+        if (!EventSystem.current.IsPointerOverGameObject())
         {
-            return;
+            CommonAttack();
         }
+
         if (Input.GetKey(KeyCode.LeftShift))
         {
             moveScale = 2;
@@ -95,8 +100,7 @@ public class PlayerManager : MonoBehaviour
         inputV = Input.GetAxis("Vertical") * moveScale;
         Move();
         Rotate();
-        Jump();
-        CommonAttack();
+        Jump();  
         PlaySkillInput();
         IsBuffingState();
         CallEnemy();
@@ -176,55 +180,79 @@ public class PlayerManager : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.Alpha1))
         {
-            if(meleeDelay >= meleeCoolingTime)
-            {
-                animator.CrossFade("Skill1", 0.1f);
-                meleeDelay = 0;
-                gameUIController.SkillRelease(0, true);
-            }
+            PlayPhysSkill();
         }
         meleeDelay += Time.deltaTime;
         if (Input.GetKeyDown(KeyCode.Alpha2))
         {
-            if(currentMP >= rangedMP)
-            {
-                if (rangedDelay >= rangedCoolingTime)
-                {
-                    animator.CrossFade("Skill2", 0.1f);
-                    currentMP -= rangedMP;
-                    gameUIController.MPCost(currentMP, MaxMP);
-                    rangedDelay = 0;
-                    gameUIController.SkillRelease(1, true);
-                }
-            }
-            else
-            {
-                Debug.Log("魔力值不够");
-            }            
+            PlayMagicSkill();
         }
         rangedDelay += Time.deltaTime;
         if (Input.GetKeyDown(KeyCode.Alpha3))
         {
-            if(currentMP >= buffMP)
-            {
-                if (buffDelay >= buffCoolingTime)
-                {
-                    isBuffing = true;
-                    animator.CrossFade("Skill3", 0.1f);
-                    currentMP -= buffMP;
-                    gameUIController.MPCost(currentMP, MaxMP);
-                    buffDelay = 0;
-                    gameUIController.SkillRelease(2, true);
-                }
-            }
-            else
-            {
-                Debug.Log("魔力值不够");
-            }
+            PlayBuffSkill();
         }
         buffDelay += Time.deltaTime;
 
         IsMPEnough();
+    }
+
+    /// <summary>
+    /// 释放物理攻击
+    /// </summary>
+    public void PlayPhysSkill()
+    {
+        if (meleeDelay >= meleeCoolingTime)
+        {
+            animator.CrossFade("Skill1", 0.1f);
+            meleeDelay = 0;
+            playerUIController.SkillRelease(0, true);
+        }
+    }
+
+    /// <summary>
+    /// 释放魔法技能
+    /// </summary>
+    public void PlayMagicSkill()
+    {
+        if (currentMP >= rangedMP)
+        {
+            if (rangedDelay >= rangedCoolingTime)
+            {
+                animator.CrossFade("Skill2", 0.1f);
+                currentMP -= rangedMP;
+                playerUIController.MPCost(currentMP, MaxMP);
+                rangedDelay = 0;
+                playerUIController.SkillRelease(1, true);
+            }
+        }
+        else
+        {
+            Debug.Log("魔力值不够");
+        }
+    }
+
+    /// <summary>
+    /// 释放Buff技能
+    /// </summary>
+    public void PlayBuffSkill()
+    {
+        if (currentMP >= buffMP)
+        {
+            if (buffDelay >= buffCoolingTime)
+            {
+                isBuffing = true;
+                animator.CrossFade("Skill3", 0.1f);
+                currentMP -= buffMP;
+                playerUIController.MPCost(currentMP, MaxMP);
+                buffDelay = 0;
+                playerUIController.SkillRelease(2, true);
+            }
+        }
+        else
+        {
+            Debug.Log("魔力值不够");
+        }
     }
 
     /// <summary>
@@ -235,17 +263,17 @@ public class PlayerManager : MonoBehaviour
         if (meleeDelay < meleeCoolingTime)
         {
             float coolDown = (meleeCoolingTime - meleeDelay) / meleeCoolingTime;
-            gameUIController.SkillCD(0, coolDown);
+            playerUIController.SkillCD(0, coolDown);
         }
         if (rangedDelay < rangedCoolingTime)
         {
             float coolDown = (rangedCoolingTime - rangedDelay) / rangedCoolingTime;
-            gameUIController.SkillCD(1, coolDown);
+            playerUIController.SkillCD(1, coolDown);
         }
         if (buffDelay < buffCoolingTime)
         {
             float coolDown = (buffCoolingTime - buffDelay) / buffCoolingTime;
-            gameUIController.SkillCD(2, coolDown);
+            playerUIController.SkillCD(2, coolDown);
         }
     }
 
@@ -254,8 +282,8 @@ public class PlayerManager : MonoBehaviour
     /// </summary>
     private void IsMPEnough()
     {
-        gameUIController.SetISMPEnough(1, currentMP >= rangedMP);
-        gameUIController.SetISMPEnough(2, currentMP >= buffMP);
+        playerUIController.SetISMPEnough(1, currentMP >= rangedMP);
+        playerUIController.SetISMPEnough(2, currentMP >= buffMP);
     }
 
     /// <summary>
@@ -282,7 +310,6 @@ public class PlayerManager : MonoBehaviour
     /// </summary>
     private void PlayMeleeEffect()
     {
-        if (isClone) return;
         Vector3 pos = effectPoint.transform.position - new Vector3(0f, 0.1f, 0);
         GameObject go = Instantiate(skillEffects[0], pos, Quaternion.identity, effectPoint.transform);
         Weapon weapon = go.GetComponent<Weapon>();
@@ -344,10 +371,27 @@ public class PlayerManager : MonoBehaviour
     /// <summary>
     /// 受到伤害
     /// </summary>
+    /// <param name="attribute">0为物理攻击，1为魔法攻击</param>
     /// <param name="damageValue"></param>
-    public void TakeDamage(int damageValue)
+    public void TakeDamage(int attribute, int damageValue)
     {
-        currentHP -= damageValue;
+        if(attribute == 0)
+        {
+            if (damageValue > physicalDef)
+            {
+                int value = damageValue - physicalDef;
+                currentHP -= value;
+            }
+        }
+        else if (attribute == 1)
+        {
+            if (damageValue > magicDef)
+            {
+                int value = damageValue - magicDef;
+                currentHP -= value;
+            }
+        }
+        
         animator.SetTrigger("Hit");
         if(currentHP <= 0)
         {
