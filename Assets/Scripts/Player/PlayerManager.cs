@@ -63,7 +63,15 @@ public class PlayerManager : MonoBehaviour
         this.MaxHP = _MaxHP;
         this.currentMP = _currentMP;
         this.MaxMP = _MaxMP;
+
+        isBuffing = false;
+        meleeDelay = meleeCoolingTime;
+        rangedDelay = rangedCoolingTime;
+        buffDelay = buffCoolingTime;
+        curBuffDuration = buffDuration;
+
         playerUIController.MPCost(_currentMP, _MaxMP);
+        playerUIController.Init();
         IsMPEnough();
     }
 
@@ -110,13 +118,18 @@ public class PlayerManager : MonoBehaviour
         }
         inputH = Input.GetAxis("Horizontal") * moveScale;
         inputV = Input.GetAxis("Vertical") * moveScale;
-        Move();
+        
         Rotate();
         Jump();  
         PlaySkillInput();
         IsBuffingState();
         CallEnemy();
         SkillCoolDown();
+    }
+
+    private void FixedUpdate()
+    {
+        Move();
     }
 
     /// <summary>

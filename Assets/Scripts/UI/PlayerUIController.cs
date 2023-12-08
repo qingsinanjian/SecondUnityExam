@@ -1,3 +1,4 @@
+using Suntail;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
@@ -20,6 +21,17 @@ public class PlayerUIController : MonoBehaviour
     public SkillUI skill2;
     //增益Buff技能
     public SkillUI skill3;
+
+    public void Init()
+    {
+        SkillRelease(0, false);
+        SkillRelease(1, false);
+        SkillRelease(2, false);
+
+        SkillCD(0, 0);
+        SkillCD(1, 0);
+        SkillCD(2, 0);
+    }
 
     /// <summary>
     /// 魔法值消耗
@@ -89,11 +101,17 @@ public class PlayerUIController : MonoBehaviour
             //    break;
             case 1:
                 skill2.isMPEnough = enough;
-                skill2.ChangeSkillImage(!enough);
+                if (!enough)
+                {
+                    skill2.ChangeSkillImage(true);
+                }
                 break;
             case 2:
                 skill3.isMPEnough = enough;
-                skill3.ChangeSkillImage(!enough);
+                if (!enough)
+                {
+                    skill3.ChangeSkillImage(true);
+                }
                 break;
         }
     }

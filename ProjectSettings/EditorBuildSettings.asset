@@ -4,5 +4,9 @@
 EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
-  m_Scenes: []
+  m_Scenes:
+  - enabled: 1
+    path: Assets/Scenes/My Suntail Village.unity
+    guid: 941e2dc475d7f7d449a23a2a7c7e1792
   m_configObjects: {}
+  m_UseUCBPForAssetBundles: 0
