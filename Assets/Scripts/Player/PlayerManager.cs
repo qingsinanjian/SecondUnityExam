@@ -55,6 +55,18 @@ public class PlayerManager : MonoBehaviour
 
     public PlayerUIController playerUIController;
 
+    public void Init(Vector3 initPos, Quaternion initRot, int _currentHP, int _MaxHP, int _currentMP, int _MaxMP)
+    {
+        transform.position = initPos;
+        transform.rotation = initRot;
+        this.currentHP = _currentHP;
+        this.MaxHP = _MaxHP;
+        this.currentMP = _currentMP;
+        this.MaxMP = _MaxMP;
+        playerUIController.MPCost(_currentMP, _MaxMP);
+        IsMPEnough();
+    }
+
     private void Start()
     {
         currentHP = MaxHP;
@@ -410,6 +422,7 @@ public class PlayerManager : MonoBehaviour
         {
             GameObject go = Instantiate(enemyPrefab, transform.position + transform.forward * 5, Quaternion.identity);
             go.transform.LookAt(transform.position);
+            GameManager.Instance.enemyManagers.Add(go.GetComponent<EnemyManager>());
         }
     }
 }

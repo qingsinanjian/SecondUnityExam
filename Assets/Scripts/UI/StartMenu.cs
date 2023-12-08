@@ -17,8 +17,14 @@ public class StartMenu : MonoBehaviour
         btnQuitGame.onClick.AddListener(QuitGame);
     }
 
+    private void Update()
+    {
+        btnContinueGame.interactable = GameManager.Instance.isExitSaveData;
+    }
+
     public void NewGame()
     {
+        GameManager.Instance.LoadGame(GameManager.Instance.defaultSavePath);
         gameObject.SetActive(false);
         Time.timeScale = 1.0f;
         GameManager.Instance.gameState = GameState.Playing;
@@ -27,6 +33,7 @@ public class StartMenu : MonoBehaviour
     public void ContinueGame()
     {
         //TODO 加载保存进度
+        GameManager.Instance.LoadGame(GameManager.Instance.filePath);
         gameObject.SetActive(false);
         Time.timeScale = 1.0f;
         GameManager.Instance.gameState = GameState.Playing;

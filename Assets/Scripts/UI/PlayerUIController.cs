@@ -89,17 +89,11 @@ public class PlayerUIController : MonoBehaviour
             //    break;
             case 1:
                 skill2.isMPEnough = enough;
-                if (!enough)
-                {
-                    skill2.ChangeSkillImage(true);
-                }
+                skill2.ChangeSkillImage(!enough);
                 break;
             case 2:
                 skill3.isMPEnough = enough;
-                if (!enough)
-                {
-                    skill3.ChangeSkillImage(true);
-                }
+                skill3.ChangeSkillImage(!enough);
                 break;
         }
     }

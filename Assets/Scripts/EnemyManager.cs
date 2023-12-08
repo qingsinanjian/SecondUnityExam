@@ -360,10 +360,12 @@ public class EnemyManager : MonoBehaviour
         animator.SetTrigger("Hit");
         if (currentHP <= 0)
         {
+            GameManager.Instance.enemyManagers.Remove(this);
             animator.SetBool("Die", true);
             transform.GetComponent<CapsuleCollider>().enabled = false;
             rb.isKinematic = true;
             enemyUI.gameObject.SetActive(false);
+            Destroy(gameObject, 5);
         }
     }
 }

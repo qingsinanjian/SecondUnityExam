@@ -27,7 +27,8 @@ public class GameMenu : MonoBehaviour
     public void SaveAndBack()
     {
         //TODO 保存游戏
-
+        GameManager.Instance.SaveGame();
+        GameManager.Instance.DestroyAllEnemy();
         //返回主菜单
         GameManager.Instance.gameState = GameState.GameStart;
         UIManager.Instance.startMenu.gameObject.SetActive(true);
